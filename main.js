@@ -1,8 +1,12 @@
-const { app, BrowserWindow } = require("electron");
+const { app, ipcMain, BrowserWindow } = require("electron");
+const conn = require('./src/backend/sshConnection.js');
 
 let appWin;
 
-createWindow = () => {
+createWindow = async () => {
+
+    await conn.connect("10.0.0.1");
+
     appWin = new BrowserWindow({
         width: 800,
         height: 600,
@@ -25,10 +29,22 @@ createWindow = () => {
     });
 }
 
+
+ipcMain.on("message", async (event, arg) =>{
+    switch(arg){
+        case "WD": 
+            event.reply("reply", await conn.sendCommand("ls -la /home/crossgame")); 
+            break;
+        default:
+            event.reply("reply", "Unsupported option"); 
+    }
+});
+
 app.on("ready", createWindow);
 
 app.on("window-all-closed", () => {
     if (process.platform !== "darwin") {
       app.quit();
     }
+    conn.close();
 });
